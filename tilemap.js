@@ -103,8 +103,8 @@ function newKeyboard(){
 				}
 				
 				// Move _player based on calculations above
-				keyboard.actor.y -= keyboard.speedY;
-				keyboard.actor.x += keyboard.speedX;
+				keyboard.actor.y = keyboard.actor.y - keyboard.speedY;
+				keyboard.actor.x = keyboard.actor.x + keyboard.speedX;
 			}
 		}
 	}
@@ -134,6 +134,9 @@ function newView(TileEngine, init_x, init_y, vw, vh){
 		},
 		isInView: function(check){
 			return (check.x+check.width > this.x && check.x <= this.viewWidth)&&(check.y+check.height > this.y && check.y <= this.viewHeight)
+		},
+		isClippedView: function(check){
+			return (check.x+check.width > TileEngine.width)||(check.y+check.height > TileEngine.height)
 		},
 		up: function(){
 			var v = $.extend({}, this);
@@ -359,6 +362,7 @@ function newTileEngine(){
 		mapHeight: 0,
 		sprites: 0,
 		main_sprite: 0,
+		main_sprite_ext: 0,
 		tilesArray: 0,
 		mouse: 0,
 		keyboard: 0,
@@ -402,6 +406,7 @@ function newTileEngine(){
 		setMainSpriteAttributes: function(obj){ 
 			TileEngine.main_sprite = newSprite();
 			TileEngine.main_sprite.init(obj.init_x, obj.init_y, TileEngine.tileWidth, TileEngine.tileHeight, obj.movement_hash, TileEngine)
+			TileEngine.main_sprite_ext = TileEngine.main_sprite
 		},
 		drawFrame: function(){ //main drawing function
 			TileEngine.ctx.clearRect(0,0,TileEngine.width, TileEngine.height);  //clear main canvas
@@ -415,6 +420,9 @@ function newTileEngine(){
 			TileEngine.ctx.fillRect(0,0,TileEngine.width, TileEngine.height);
 		},
 		renderCirc: function(view){
+			view.x += (TileEngine.main_sprite.x - (view.x + (TileEngine.width*0.5))) * 0.01;
+			view.y += (TileEngine.main_sprite.y - (view.y + (TileEngine.width*0.5))) * 0.01;
+			
 			var i = TileEngine.zones.length,
 					validZones = new Array(),
 					views = TileEngine.getCurrentViews(view);
@@ -437,6 +445,8 @@ function newTileEngine(){
 				if(currentView.isInView(TileEngine.main_sprite)){
 					TileEngine.ctx.drawImage(TileEngine.tileSource[TileEngine.main_sprite.current_index()].canvas, (TileEngine.main_sprite.x+currentView.xoffset)-view.x, (TileEngine.main_sprite.y+currentView.yoffset)-view.y);
 				}
+				if(TileEngine.main_sprite && view.isClippedView(TileEngine.main_sprite))
+					TileEngine.ctx.drawImage(TileEngine.tileSource[TileEngine.main_sprite.current_index()].canvas, (main_sprite.x+main_sprite.width)%view.TileEngine.width, (main_sprite.y+main_sprite.height)%view.TileEngine.height);
 			}
 			
 			//decorations
@@ -466,6 +476,9 @@ function newTileEngine(){
 			if(TileEngine.main_sprite && view.isInView(TileEngine.main_sprite))
 				TileEngine.ctx.drawImage(TileEngine.tileSource[TileEngine.main_sprite.current_index()].canvas, TileEngine.main_sprite.x-view.x, TileEngine.main_sprite.y-view.y);
 			
+			if(TileEngine.main_sprite && view.isClippedView(TileEngine.main_sprite))
+				TileEngine.ctx.drawImage(TileEngine.tileSource[TileEngine.main_sprite.current_index()].canvas, 0, 0);
+
 			//decorations
 			i = validZones.length;
 			while(i--){
